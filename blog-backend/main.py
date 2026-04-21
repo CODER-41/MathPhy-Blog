@@ -11,15 +11,15 @@ Startup sequence:
 Shutdown sequence:
   1. Close Redis connection pool gracefully
 
-Worker scaling (set in Procfile):
-  --workers 4   → 4 × DB pool_size(5) = 20 conns ← under Railway's 25-conn limit
-  Adjust DB_POOL_SIZE in .env if you change worker count.
+Worker scaling (set in render.yaml startCommand):
+  --workers 4   → 4 × DB pool_size(4) = 16 conns — well under Render's 97-conn limit
+  Adjust DB_POOL_SIZE in Render environment variables if you change worker count.
+  Formula: pool_size = floor(92 / num_workers)
 """
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.categories import categories_router, tags_router
@@ -66,16 +66,16 @@ app = FastAPI(
         "Redis caching, and CDN-friendly Cache-Control headers."
     ),
     lifespan=lifespan,
-    # Hide docs in production
+    # Swagger UI and ReDoc are hidden in production (DEBUG=False)
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
 # ── Middleware (outermost registered = outermost executed) ────────────────────
-# 1. Request logging — wraps everything, catches unhandled exceptions
+# 1. Request logging — wraps everything, attaches X-Request-ID, catches 500s
 app.add_middleware(RequestLoggingMiddleware)
 
-# 2. Cache-Control — adds CDN headers to public GET responses
+# 2. Cache-Control — adds CDN headers to public GET responses for Cloudflare
 app.add_middleware(CacheControlMiddleware)
 
 # 3. CORS — must be after logging so preflight requests are also logged
@@ -85,7 +85,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"],   # so the frontend can read the trace ID
+    expose_headers=["X-Request-ID"],  # frontend can read trace ID for debugging
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
@@ -104,11 +104,11 @@ app.include_router(users_router,      prefix=PREFIX)
 async def health():
     """
     Used by:
-      - Railway/Render health checks
-      - UptimeRobot pinger (prevents cold starts on free tier)
-      - Kubernetes / load-balancer liveness probes if you ever migrate
+      - Render health checks (configured in render.yaml → healthCheckPath)
+      - UptimeRobot pinger (prevents Render free tier cold starts every 10 min)
+      - Cloudflare health monitoring if configured
 
-    Returns Redis status so monitoring can alert on cache layer failure.
+    Returns Redis status so alerts fire if the cache layer goes down.
     """
     redis_ok = False
     r = get_redis()
