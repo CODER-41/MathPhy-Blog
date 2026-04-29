@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from python_slugify import slugify
+from slugify import slugify
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache, invalidate_lists

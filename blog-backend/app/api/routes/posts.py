@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from python_slugify import slugify
+from slugify import slugify
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
