@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from python_slugify import slugify
+from slugify import slugify
 from sqlalchemy.orm import Session
 from typing import List
 
