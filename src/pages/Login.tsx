@@ -15,9 +15,11 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: () => authService.login({ email, password }),
-    onSuccess: (data) => {
-      setAuth(data.token, data.user);
-      toast({ title: 'Welcome back!', description: `Logged in as ${data.user.username}` });
+    onSuccess: async (data) => {
+      localStorage.setItem('auth-storage', JSON.stringify({ state: { token: data.access_token } }));
+      const user = await authService.me();
+      setAuth(data.access_token, user);
+      toast({ title: 'Welcome back!', description: `Logged in as ${user.username}` });
       navigate('/admin');
     },
     onError: (err: Error) => {
@@ -38,7 +40,6 @@ export default function Login() {
           <h1 className="font-heading text-2xl font-bold text-chalk-bright">Admin Login</h1>
           <p className="text-sm text-muted-foreground mt-1">Access the blog management panel</p>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-chalk mb-1.5">Email</label>

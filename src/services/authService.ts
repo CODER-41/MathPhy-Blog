@@ -11,10 +11,17 @@ export interface AuthResponse {
   token_type: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+}
+
 export const authService = {
   login: (data: LoginPayload) =>
     apiFetch<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  me: () => apiFetch<User>('/auth/me'),
 };
