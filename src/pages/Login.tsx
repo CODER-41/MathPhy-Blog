@@ -15,13 +15,12 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: () => authService.login({ email, password }),
-    onSuccess: async (data) => {
-      localStorage.setItem('auth-storage', JSON.stringify({ state: { token: data.access_token } }));
-      const user = await authService.me();
-      setAuth(data.access_token, user);
-      toast({ title: 'Welcome back!', description: `Logged in as ${user.username}` });
-      navigate('/admin');
-    },
+   onSuccess: async (data) => {
+  const user = await authService.me();
+  setAuth(data.access_token, data.refresh_token, user);  // ← fixed typo + use user from .me()
+  toast({ title: 'Welcome back!', description: `Logged in as ${user.username}` });
+  navigate('/admin');
+},
     onError: (err: Error) => {
       toast({ title: 'Login failed', description: err.message, variant: 'destructive' });
     },
