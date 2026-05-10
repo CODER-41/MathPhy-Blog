@@ -10,17 +10,24 @@ export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const updateToken = useAuthStore((s) => s.updateToken);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const mutation = useMutation({
     mutationFn: () => authService.login({ email, password }),
-   onSuccess: async (data) => {
-  const user = await authService.me();
-  setAuth(data.access_token, data.refresh_token, user);  // ← fixed typo + use user from .me()
-  toast({ title: 'Welcome back!', description: `Logged in as ${user.username}` });
-  navigate('/admin');
-},
+    onSuccess: async (data) => {
+      // Save the token FIRST so apiFetch attaches it to the /me request
+      updateToken(data.access_token);
+
+      const user = await authService.me();
+
+      // Now save everything together with the user object
+      setAuth(data.access_token, data.refresh_token, user);
+
+      toast({ title: 'Welcome back!', description: `Logged in as ${user.username}` });
+      navigate('/admin');
+    },
     onError: (err: Error) => {
       toast({ title: 'Login failed', description: err.message, variant: 'destructive' });
     },
