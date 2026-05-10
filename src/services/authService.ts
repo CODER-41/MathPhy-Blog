@@ -23,5 +23,12 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  me: () => apiFetch<User>('/auth/me'),
+
+  // Optional token param bypasses the localStorage timing issue —
+  // pass data.access_token directly from onSuccess instead of waiting
+  // for Zustand persist to flush to localStorage.
+  me: (token?: string) =>
+    apiFetch<User>('/auth/me', {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    }),
 };
